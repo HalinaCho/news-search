@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useState } from "react";
 import { useNewsSearch } from "@/hooks/useNewsSearch";
@@ -92,7 +93,12 @@ export function NewsSearchPage() {
       <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur">
         <div className="mx-auto w-full max-w-5xl px-4 py-3">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-6">
-            <p className="text-lg font-bold tracking-tight">TechPulse</p>
+            <Link
+              href="/"
+              className="inline-flex min-h-11 items-center self-start text-lg font-bold tracking-tight hover:opacity-70"
+            >
+              TechPulse
+            </Link>
             <div className="md:flex-1">
               <SearchBar query={query} onSearch={handleSearch} />
             </div>
