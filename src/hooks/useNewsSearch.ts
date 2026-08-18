@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useReducer, useState } from "react";
+import { CACHE_TTL_MS } from "@/lib/constants";
 import { isRetriable } from "@/lib/errors";
 import type {
   ErrorCode,
@@ -17,8 +18,21 @@ const MIN_LOADING_MS = 300;
 /** 지수 백오프 — 최대 3회 재시도 (FR-06-03). */
 const BACKOFF_MS = [1000, 2000, 4000];
 
-/** 같은 검색 조합을 다시 부르지 않기 위한 캐시 (EC-06). */
-const cache = new Map<string, NewsSuccess>();
+/**
+ * 같은 검색 조합을 다시 부르지 않기 위한 캐시 (EC-06).
+ * 새로고침하면 비워지므로 어디까지나 보조다 — 호출량을 실제로 줄이는 건 서버의 revalidate 쪽이다.
+ */
+const cache = new Map<string, { payload: NewsSuccess; expiresAt: number }>();
+
+function readCache(key: string): NewsSuccess | null {
+  const entry = cache.get(key);
+  if (!entry) return null;
+  if (Date.now() >= entry.expiresAt) {
+    cache.delete(key);
+    return null;
+  }
+  return entry.payload;
+}
 
 class SearchError extends Error {
   constructor(readonly code: ErrorCode) {
@@ -36,6 +50,8 @@ interface State {
   status: SearchStatus;
   items: NewsItem[];
   total: number;
+  /** 지금 보고 있는 결과가 언제 만들어진 것인지 (캐시를 쓰는 이상 숨기지 않는다) */
+  lastBuildDate: string | null;
   error: ErrorCode | null;
   /** 현재 목록이 어떤 검색(검색어+정렬)의 결과인지 */
   scope: string;
@@ -50,6 +66,7 @@ const initialState: State = {
   status: "loading",
   items: [],
   total: 0,
+  lastBuildDate: null,
   error: null,
   scope: "",
 };
@@ -67,6 +84,7 @@ function reducer(state: State, action: Action): State {
         status: action.payload.items.length === 0 ? "empty" : "success",
         items: action.payload.items,
         total: action.payload.total,
+        lastBuildDate: action.payload.lastBuildDate,
         error: null,
         scope: action.scope,
       };
@@ -122,7 +140,7 @@ export function useNewsSearch({ query, sort, page }: SearchParams) {
     const scope = `${query}|${sort}`;
     const key = `${scope}|${page}`;
 
-    const cached = cache.get(key);
+    const cached = readCache(key);
     if (cached) {
       dispatch({ type: "resolved", scope, payload: cached });
       return;
@@ -146,7 +164,7 @@ export function useNewsSearch({ query, sort, page }: SearchParams) {
       for (let attempt = 0; ; attempt += 1) {
         try {
           const payload = await requestNews({ query, sort, page }, controller.signal);
-          cache.set(key, payload);
+          cache.set(key, { payload, expiresAt: Date.now() + CACHE_TTL_MS });
           settle({ type: "resolved", scope, payload }, startedAt);
           return;
         } catch (error) {

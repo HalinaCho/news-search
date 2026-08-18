@@ -43,7 +43,7 @@ export function NewsSearchPage() {
         sort: next.sort ?? sort,
         page: String(next.page ?? 1), // 검색어·정렬이 바뀌면 1페이지부터 (FR-04-02)
       });
-      const href = `/?${params.toString()}`;
+      const href = `/search?${params.toString()}`;
       if (replace) router.replace(href, { scroll });
       else router.push(href, { scroll });
     },

@@ -3,7 +3,9 @@
 AI·로봇 등 미래 기술 키워드로 네이버 뉴스를 검색하는 작은 웹 앱이다.
 [PRD](./PRD_네이버뉴스검색사이트.md)에 정의된 요구사항을 Next.js App Router로 구현했다.
 
-- 인기 키워드 칩으로 한 번에 검색, 정확도순/최신순 정렬
+- **대시보드(`/`)** — 키워드 3개를 컬럼으로 나란히 놓고 각각 최신 8건씩. 아침에 한 번 열어 훑는 용도
+- **검색(`/search`)** — 인기 키워드 칩, 정확도순/최신순 정렬, 페이지네이션
+- 같은 검색 조합은 30분간 캐시해 호출 한도를 아낀다. 컬럼 헤더의 "N분 전 갱신"이 실제 데이터 시각
 - 검색 상태(검색어·정렬·페이지)는 URL 쿼리스트링에 그대로 담겨 새로고침해도 유지된다
 - 네이버 API 키는 서버 프록시(`/api/news`) 안에서만 쓰이고 브라우저로 나가지 않는다
 
@@ -55,13 +57,18 @@ Vercel 등에 올릴 때는 `.env.local` 파일을 업로드하는 게 아니라
 ```
 src/
 ├─ app/
-│  ├─ api/news/route.ts   서버 프록시 — 네이버 API 호출과 에러 코드 매핑
-│  ├─ page.tsx            Suspense 경계
+│  ├─ api/news/route.ts   서버 프록시 — 네이버 API 호출, 30분 캐시, 에러 코드 매핑
+│  ├─ page.tsx            대시보드 (키워드 컬럼 3개)
+│  ├─ search/page.tsx     검색 화면 (Suspense 경계)
 │  └─ error.tsx           예상치 못한 오류 화면
-├─ components/            검색창·키워드 칩·카드·페이지네이션·상태 화면
-├─ hooks/useNewsSearch.ts 요청 취소·재시도·캐시·최소 로딩 시간
+├─ components/
+│  ├─ DashboardColumn.tsx 키워드 1개 = useNewsSearch 1개
+│  └─ …                   검색창·키워드 칩·카드·페이지네이션·상태 화면
+├─ hooks/useNewsSearch.ts 요청 취소·지수 백오프 재시도·캐시·최소 로딩 시간
 └─ lib/                   타입, 상수, 표시용 포맷터, 에러 메시지
 ```
+
+대시보드에 띄울 키워드는 `src/lib/constants.ts`의 `DASHBOARD_KEYWORDS` 한 줄에서 바꾼다.
 
 ## 명령어
 

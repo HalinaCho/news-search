@@ -1,4 +1,4 @@
-import { DISPLAY, MAX_START } from "@/lib/constants";
+import { CACHE_TTL_SECONDS, DISPLAY, MAX_START } from "@/lib/constants";
 import type { ErrorCode, NewsSuccess, SortOption } from "@/lib/types";
 
 // 검색 API는 개발자센터(openapi.naver.com)에서 NAVER API HUB로 이관됐다.
@@ -48,7 +48,8 @@ export async function GET(request: Request) {
         "X-NCP-APIGW-API-KEY-ID": keyId,
         "X-NCP-APIGW-API-KEY": key,
       },
-      cache: "no-store",
+      // 같은 검색 조합은 30분에 한 번만 네이버까지 간다 (EC-06 — 일일 호출 한도 보호).
+      next: { revalidate: CACHE_TTL_SECONDS },
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
   } catch (error) {
@@ -68,6 +69,7 @@ export async function GET(request: Request) {
 
   const data = (await response.json()) as NewsSuccess;
   return Response.json({
+    lastBuildDate: data.lastBuildDate,
     total: data.total,
     start: data.start,
     display: data.display,

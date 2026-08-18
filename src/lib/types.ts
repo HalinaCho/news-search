@@ -9,6 +9,8 @@ export interface NewsItem {
 
 /** /api/news 성공 응답. */
 export interface NewsSuccess {
+  /** 네이버가 이 응답을 만든 시각. 캐시가 히트하면 값이 그대로 유지된다. */
+  lastBuildDate: string;
   total: number;
   start: number;
   display: number;
