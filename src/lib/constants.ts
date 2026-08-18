@@ -20,16 +20,40 @@ export const DASHBOARD_ITEM_COUNT = 8;
 export const CACHE_TTL_SECONDS = 1800; // 30분
 export const CACHE_TTL_MS = CACHE_TTL_SECONDS * 1000;
 
-/** 헤더 하단에 고정 노출할 인기 키워드 (FR-01-02). */
-export const POPULAR_KEYWORDS = [
-  "AI",
-  "로봇",
-  "휴머노이드",
-  "자율주행",
-  "생성형AI",
-  "반도체",
-  "양자컴퓨팅",
-  "우주기술",
-  "UAM",
-  "스마트팩토리",
-] as const;
+export interface KeywordCategory {
+  name: string;
+  keywords: readonly string[];
+}
+
+/**
+ * 헤더 하단에 고정 노출할 키워드 (FR-01-02).
+ * 카테고리를 먼저 고르면 그 안의 키워드 칩만 보인다 — 칩을 늘려도 헤더가 높아지지 않는다.
+ */
+export const KEYWORD_CATEGORIES: readonly KeywordCategory[] = [
+  {
+    name: "기술트렌드",
+    keywords: [
+      "AI",
+      "생성형AI",
+      "휴머노이드",
+      "로봇",
+      "자율주행",
+      "반도체",
+      "양자컴퓨팅",
+      "우주기술",
+    ],
+  },
+  {
+    name: "주식",
+    keywords: ["국내주식", "미국주식", "중국주식", "코스피", "나스닥", "ETF", "공모주"],
+  },
+  {
+    name: "크립토",
+    keywords: ["비트코인", "이더리움", "리플", "솔라나", "알트코인", "스테이블코인"],
+  },
+];
+
+/** 검색어가 어느 카테고리에도 없으면 -1. */
+export function findCategoryIndex(query: string): number {
+  return KEYWORD_CATEGORIES.findIndex((category) => category.keywords.includes(query));
+}

@@ -1,10 +1,16 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useNewsSearch } from "@/hooks/useNewsSearch";
-import { DEFAULT_QUERY, MAX_PAGE, POPULAR_KEYWORDS } from "@/lib/constants";
+import {
+  DEFAULT_QUERY,
+  findCategoryIndex,
+  KEYWORD_CATEGORIES,
+  MAX_PAGE,
+} from "@/lib/constants";
 import type { SortOption } from "@/lib/types";
+import { CategoryTabs } from "./CategoryTabs";
 import { EmptyState } from "./EmptyState";
 import { ErrorState } from "./ErrorState";
 import { KeywordChips } from "./KeywordChips";
@@ -15,6 +21,7 @@ import { SkeletonCard } from "./SkeletonCard";
 import { SortSelect } from "./SortSelect";
 
 const SKELETON_COUNT = 6; // FR-03-08
+const KEYWORD_PANEL_ID = "keyword-panel";
 
 interface NavigateOptions {
   replace?: boolean;
@@ -32,6 +39,19 @@ export function NewsSearchPage() {
   const page = Number.isInteger(rawPage) ? Math.min(Math.max(rawPage, 1), MAX_PAGE) : 1;
 
   const { status, items, total, error, retry } = useNewsSearch({ query, sort, page });
+
+  // 어떤 탭을 펼쳐 둘지. 탭을 직접 누르면 그대로 따르고,
+  // 검색어가 바뀌었을 때만 그 검색어가 속한 카테고리로 옮겨간다.
+  // (검색어 우선으로 두면 현재 검색어가 든 탭에서 빠져나올 수 없다)
+  const queryCategory = findCategoryIndex(query);
+  const [activeCategory, setActiveCategory] = useState(Math.max(queryCategory, 0));
+  const [lastQuery, setLastQuery] = useState(query);
+  if (query !== lastQuery) {
+    setLastQuery(query);
+    if (queryCategory >= 0) setActiveCategory(queryCategory);
+  }
+
+  const categoryKeywords = KEYWORD_CATEGORIES[activeCategory].keywords;
 
   const navigate = useCallback(
     (
@@ -78,12 +98,20 @@ export function NewsSearchPage() {
             </div>
           </div>
 
-          <div className="mt-3">
-            <KeywordChips
-              keywords={POPULAR_KEYWORDS}
-              activeQuery={query}
-              onSelect={handleKeyword}
+          <div className="mt-2">
+            <CategoryTabs
+              categories={KEYWORD_CATEGORIES}
+              activeIndex={activeCategory}
+              panelId={KEYWORD_PANEL_ID}
+              onSelect={setActiveCategory}
             />
+            <div id={KEYWORD_PANEL_ID} role="tabpanel" className="mt-2">
+              <KeywordChips
+                keywords={categoryKeywords}
+                activeQuery={query}
+                onSelect={handleKeyword}
+              />
+            </div>
           </div>
         </div>
       </header>
@@ -111,7 +139,7 @@ export function NewsSearchPage() {
         ) : status === "empty" ? (
           <EmptyState
             query={query}
-            suggestions={POPULAR_KEYWORDS.filter((keyword) => keyword !== query).slice(0, 4)}
+            suggestions={categoryKeywords.filter((keyword) => keyword !== query).slice(0, 4)}
             onSelect={handleKeyword}
           />
         ) : (
