@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { formatPubDate, getArticleUrl, getSource, toIsoDate } from "@/lib/format";
 import type { NewsItem } from "@/lib/types";
 import { useAuth } from "./AuthProvider";
@@ -7,7 +8,14 @@ import { BookmarkIcon } from "./BookmarkIcon";
 import { Highlight } from "./Highlight";
 import { useUserData } from "./UserDataProvider";
 
-export function NewsCard({ item }: { item: NewsItem }) {
+interface Props {
+  item: NewsItem;
+  /** 같은 내용을 실은 다른 매체 기사. 접어 두었다가 눌러서 펼친다. */
+  duplicates?: NewsItem[];
+}
+
+export function NewsCard({ item, duplicates = [] }: Props) {
+  const [expanded, setExpanded] = useState(false);
   const { user, signIn } = useAuth();
   const { ready, readLinks, bookmarkedLinks, markRead, markUnread, toggleBookmark } =
     useUserData();
@@ -99,6 +107,44 @@ export function NewsCard({ item }: { item: NewsItem }) {
           원문보기
         </a>
       </div>
+
+      {/* 같은 내용을 실은 다른 매체. 감추는 게 아니라 접어 두는 것이라 언제든 펼칠 수 있다. */}
+      {duplicates.length > 0 && (
+        <div className="mt-3 border-t border-border pt-3">
+          <button
+            type="button"
+            onClick={() => setExpanded((value) => !value)}
+            aria-expanded={expanded}
+            className="text-xs text-muted hover:text-foreground"
+          >
+            같은 내용 {duplicates.length}곳 {expanded ? "접기" : "더 보기"}
+          </button>
+
+          {expanded && (
+            <ul className="mt-2 flex flex-col gap-2">
+              {duplicates.map((duplicate) => (
+                <li key={duplicate.link}>
+                  <a
+                    href={getArticleUrl(duplicate)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => trackRead && markRead(duplicate.link)}
+                    className="flex items-baseline justify-between gap-2 text-xs text-muted hover:text-foreground"
+                  >
+                    <span className="min-w-0 truncate">{getSource(duplicate)}</span>
+                    <time
+                      dateTime={toIsoDate(duplicate.pubDate)}
+                      className="shrink-0 tabular-nums"
+                    >
+                      {formatPubDate(duplicate.pubDate)}
+                    </time>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </article>
   );
 }

@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { groupDuplicates } from "@/lib/dedupe";
 import { useNewsSearch } from "@/hooks/useNewsSearch";
 import {
   DEFAULT_KEYWORD_SETTINGS,
@@ -39,7 +40,7 @@ export function NewsSearchPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
-  const { keywords } = useUserData();
+  const { keywords, readLinks } = useUserData();
   const [editing, setEditing] = useState(false);
 
   // 아직 아무것도 안 고쳤거나 비로그인이면 앱 기본 카테고리를 쓴다.
@@ -50,6 +51,8 @@ export function NewsSearchPage() {
   const sort: SortOption = searchParams.get("sort") === "date" ? "date" : "sim";
   const rawPage = Number(searchParams.get("page") ?? "1");
   const page = Number.isInteger(rawPage) ? Math.min(Math.max(rawPage, 1), MAX_PAGE) : 1;
+  // 이것도 URL에 담는다 — 새로고침해도 유지되고, 링크를 남기면 상대도 같은 화면을 본다.
+  const unreadOnly = searchParams.get("unread") === "1";
 
   const { status, items, total, error, lastBuildDate, retry } = useNewsSearch({
     query,
@@ -75,7 +78,12 @@ export function NewsSearchPage() {
 
   const navigate = useCallback(
     (
-      next: { query?: string; sort?: SortOption; page?: number },
+      next: {
+        query?: string;
+        sort?: SortOption;
+        page?: number;
+        unreadOnly?: boolean;
+      },
       { replace = false, scroll = false }: NavigateOptions = {},
     ) => {
       const params = new URLSearchParams({
@@ -83,11 +91,14 @@ export function NewsSearchPage() {
         sort: next.sort ?? sort,
         page: String(next.page ?? 1), // 검색어·정렬이 바뀌면 1페이지부터 (FR-04-02)
       });
+      // 켜져 있을 때만 붙인다. 기본 상태에서 주소가 지저분해지지 않도록.
+      if (next.unreadOnly ?? unreadOnly) params.set("unread", "1");
+
       const href = `/?${params.toString()}`;
       if (replace) router.replace(href, { scroll });
       else router.push(href, { scroll });
     },
-    [query, sort, router],
+    [query, sort, unreadOnly, router],
   );
 
   const handleSearch = useCallback(
@@ -102,6 +113,24 @@ export function NewsSearchPage() {
   const handlePage = useCallback(
     (next: number) => navigate({ page: next }, { scroll: true }),
     [navigate],
+  );
+
+  // 같은 사건을 받아쓴 기사를 한 장으로 접는다. 접힌 것도 카드에서 펼쳐 볼 수 있다.
+  const groups = useMemo(() => groupDuplicates(items), [items]);
+
+  // 안 읽음 필터는 대표 기사(lead) 기준으로 판단한다 — 화면에서 누르는 게 그것이라 예측이 쉽다.
+  const visibleGroups = useMemo(
+    () => (unreadOnly ? groups.filter((group) => !readLinks.has(group.lead.link)) : groups),
+    [groups, unreadOnly, readLinks],
+  );
+
+  const foldedCount = items.length - groups.length;
+  const hiddenCount = groups.length - visibleGroups.length;
+
+  const handleUnreadToggle = useCallback(
+    // 페이지는 그대로 둔다. 보고 있던 자리에서 걸러내는 게 자연스럽다.
+    () => navigate({ unreadOnly: !unreadOnly, page }, { replace: true }),
+    [navigate, unreadOnly, page],
   );
 
   const isLoading = status === "loading";
@@ -190,12 +219,38 @@ export function NewsSearchPage() {
                   ? ""
                   : `검색결과 ${total.toLocaleString("ko-KR")}건`}
             </p>
-            {/* 같은 검색은 30분간 캐시되므로 지금 보는 게 언제 만들어진 결과인지 밝혀 둔다. */}
-            {!isLoading && lastBuildDate && (
-              <p className="mt-0.5 text-xs text-muted">{formatPubDate(lastBuildDate)} 갱신</p>
+            {/* 같은 검색은 30분간 캐시되므로 지금 보는 게 언제 만들어진 결과인지 밝혀 둔다.
+                접거나 숨긴 건수도 같이 알린다 — 조용히 줄어들면 결과가 빠진 것처럼 보인다. */}
+            {!isLoading && (
+              <p className="mt-0.5 text-xs text-muted">
+                {[
+                  lastBuildDate ? `${formatPubDate(lastBuildDate)} 갱신` : null,
+                  foldedCount > 0 ? `중복 ${foldedCount}건 접음` : null,
+                  hiddenCount > 0 ? `읽은 기사 ${hiddenCount}건 숨김` : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
             )}
           </div>
-          <SortSelect sort={sort} onChange={handleSort} />
+
+          <div className="flex shrink-0 items-center gap-2">
+            {user && (
+              <button
+                type="button"
+                onClick={handleUnreadToggle}
+                aria-pressed={unreadOnly}
+                className={`min-h-11 rounded-lg border px-3 text-sm transition-colors ${
+                  unreadOnly
+                    ? "border-foreground bg-foreground font-medium text-background"
+                    : "border-border bg-surface text-muted hover:border-foreground/40 hover:text-foreground"
+                }`}
+              >
+                안 읽은 것만
+              </button>
+            )}
+            <SortSelect sort={sort} onChange={handleSort} />
+          </div>
         </div>
 
         {isLoading ? (
@@ -217,11 +272,29 @@ export function NewsSearchPage() {
             {showBanner && (
               <ErrorState code={error ?? "UNKNOWN"} onRetry={retry} variant="banner" />
             )}
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {items.map((item) => (
-                <NewsCard key={item.link} item={item} />
-              ))}
-            </div>
+            {visibleGroups.length === 0 ? (
+              // 이 페이지가 전부 읽은 기사인 경우. 결과가 없는 것과는 다르니 따로 안내한다.
+              <div className="rounded-xl border border-border bg-surface px-4 py-16 text-center">
+                <p className="text-sm text-muted">이 페이지의 기사를 모두 읽으셨어요.</p>
+                <button
+                  type="button"
+                  onClick={handleUnreadToggle}
+                  className="mt-4 inline-flex min-h-11 items-center rounded-lg border border-border px-4 text-sm hover:border-foreground/40"
+                >
+                  읽은 기사도 보기
+                </button>
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {visibleGroups.map((group) => (
+                  <NewsCard
+                    key={group.lead.link}
+                    item={group.lead}
+                    duplicates={group.others}
+                  />
+                ))}
+              </div>
+            )}
             <Pagination page={page} total={total} onChange={handlePage} />
           </>
         )}
