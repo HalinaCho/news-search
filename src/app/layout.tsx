@@ -7,7 +7,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "뉴스편식 — 내가 고른 키워드만",
   description:
-    "관심 있는 키워드만 골라 네이버 뉴스를 훑어봅니다. 읽은 기사는 흐려지고, 담아둔 기사는 저장함에 남습니다.",
+    "관심 있는 키워드만 골라 네이버 뉴스를 훑어봅니다. 읽은 기사는 흐려지고, 담아둔 기사는 북마크에 남습니다.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

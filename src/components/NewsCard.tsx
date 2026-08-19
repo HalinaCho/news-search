@@ -3,6 +3,7 @@
 import { formatPubDate, getArticleUrl, getSource, toIsoDate } from "@/lib/format";
 import type { NewsItem } from "@/lib/types";
 import { useAuth } from "./AuthProvider";
+import { BookmarkIcon } from "./BookmarkIcon";
 import { Highlight } from "./Highlight";
 import { useUserData } from "./UserDataProvider";
 
@@ -61,22 +62,14 @@ export function NewsCard({ item }: { item: NewsItem }) {
           // 눌러도 아무 일이 없는 것처럼 보이니 그동안은 막아 둔다.
           disabled={Boolean(user) && !ready}
           aria-pressed={saved}
-          title={user ? (saved ? "저장 해제" : "저장") : "로그인하면 저장할 수 있어요"}
-          aria-label={user ? (saved ? "저장 해제" : "저장") : "로그인하고 저장하기"}
+          title={user ? (saved ? "북마크 해제" : "북마크") : "로그인하면 북마크할 수 있어요"}
+          aria-label={user ? (saved ? "북마크 해제" : "북마크") : "로그인하고 북마크하기"}
           className={`-mt-1 -mr-1 grid size-8 shrink-0 place-items-center rounded-lg transition-colors disabled:opacity-40 ${
             saved ? "text-accent" : "text-muted hover:text-foreground"
           }`}
         >
-          {/* 채워진 북마크 = 저장됨, 테두리만 = 저장 안 됨 */}
-          <svg viewBox="0 0 24 24" className="size-5" aria-hidden>
-            <path
-              d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z"
-              fill={saved ? "currentColor" : "none"}
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinejoin="round"
-            />
-          </svg>
+          {/* 채워진 북마크 = 담긴 상태, 테두리만 = 안 담긴 상태 */}
+          <BookmarkIcon filled={saved} className="size-5" />
         </button>
       </div>
 

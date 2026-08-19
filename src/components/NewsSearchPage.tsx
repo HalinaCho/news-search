@@ -14,6 +14,7 @@ import { formatPubDate } from "@/lib/format";
 import type { SortOption } from "@/lib/types";
 import { AuthButton } from "./AuthButton";
 import { useAuth } from "./AuthProvider";
+import { BookmarkLink } from "./BookmarkLink";
 import { CategoryTabs } from "./CategoryTabs";
 import { EmptyState } from "./EmptyState";
 import { ErrorState } from "./ErrorState";
@@ -118,7 +119,8 @@ export function NewsSearchPage() {
               >
                 뉴스편식
               </Link>
-              <div className="md:order-3">
+              <div className="flex items-center gap-2 md:order-3">
+                <BookmarkLink />
                 <AuthButton />
               </div>
             </div>
@@ -143,7 +145,7 @@ export function NewsSearchPage() {
                   onClick={() => setEditing(true)}
                   className="min-h-11 shrink-0 px-2 text-sm text-muted hover:text-foreground"
                 >
-                  편집
+                  키워드 편집
                 </button>
               )}
             </div>

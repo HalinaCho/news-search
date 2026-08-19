@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { toNewsItem } from "@/lib/supabase/queries";
 import { AuthButton } from "./AuthButton";
+import { BookmarkLink } from "./BookmarkLink";
 import { NewsCard } from "./NewsCard";
 import { SkeletonCard } from "./SkeletonCard";
 import { useAuth } from "./AuthProvider";
@@ -25,12 +26,7 @@ export function SavedPage() {
             뉴스편식
           </Link>
           <div className="flex items-center gap-2">
-            <Link
-              href="/"
-              className="inline-flex min-h-11 items-center rounded-lg border border-border bg-surface px-4 text-sm hover:border-foreground/40"
-            >
-              키워드 검색
-            </Link>
+            <BookmarkLink />
             <AuthButton />
           </div>
         </div>
@@ -38,7 +34,7 @@ export function SavedPage() {
 
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">
         <h1 className="mb-5 text-xl font-bold tracking-tight">
-          저장함
+          북마크
           {user && ready && bookmarks.length > 0 && (
             <span className="ml-2 text-sm font-normal text-muted">{bookmarks.length}건</span>
           )}
@@ -53,7 +49,7 @@ export function SavedPage() {
         ) : !user ? (
           <div className="rounded-xl border border-border bg-surface px-4 py-16 text-center">
             <p className="text-sm text-muted">
-              저장한 기사는 계정에 담겨 어느 기기에서든 그대로 보입니다.
+              북마크한 기사는 계정에 담겨 어느 기기에서든 그대로 보입니다.
             </p>
             <button
               type="button"
@@ -65,7 +61,7 @@ export function SavedPage() {
           </div>
         ) : bookmarks.length === 0 ? (
           <div className="rounded-xl border border-border bg-surface px-4 py-16 text-center">
-            <p className="text-sm text-muted">아직 저장한 기사가 없어요.</p>
+            <p className="text-sm text-muted">아직 북마크한 기사가 없어요.</p>
             <p className="mt-1 text-sm text-muted">
               기사 카드 오른쪽 위의 북마크 아이콘을 누르면 여기에 담깁니다.
             </p>

@@ -1,10 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { useAuth } from "./AuthProvider";
-import { useUserData } from "./UserDataProvider";
 
 /** 제공자에 따라 채워지는 프로필 필드가 다르다. 아무것도 없으면 그냥 "내 계정". */
 function displayName(metadata: Record<string, unknown>): string {
@@ -17,7 +15,6 @@ function displayName(metadata: Record<string, unknown>): string {
 
 export function AuthButton() {
   const { user, loading, signIn, signOut } = useAuth();
-  const { bookmarks } = useUserData();
   const [open, setOpen] = useState(false);
 
   // 환경변수가 아직 안 채워졌으면 로그인 자체가 불가능하니 버튼을 숨긴다.
@@ -60,17 +57,7 @@ export function AuthButton() {
             onClick={() => setOpen(false)}
             className="fixed inset-0 z-10 cursor-default"
           />
-          <div className="absolute right-0 z-20 mt-1 w-40 rounded-lg border border-border bg-surface p-1 shadow-lg">
-            <Link
-              href="/saved"
-              onClick={() => setOpen(false)}
-              className="flex items-center justify-between gap-2 rounded-md px-3 py-2.5 text-sm hover:bg-background"
-            >
-              <span>저장함</span>
-              {bookmarks.length > 0 && (
-                <span className="text-xs text-muted">{bookmarks.length}</span>
-              )}
-            </Link>
+          <div className="absolute right-0 z-20 mt-1 w-36 rounded-lg border border-border bg-surface p-1 shadow-lg">
             <button
               type="button"
               onClick={() => {
