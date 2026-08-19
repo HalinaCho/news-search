@@ -148,13 +148,14 @@ export function NewsSearchPage() {
                     onClick={() => setEditing(true)}
                     title="키워드 편집"
                     aria-label="키워드 편집"
-                    // 탭은 테두리 없는 글자 + 밑줄로 상태를 나타낸다.
-                    // 편집은 탭이 아니라 동작이므로, 앱의 다른 버튼들과 같은 외곽선 상자 모양을 준다.
-                    className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-lg border border-border bg-surface px-2.5 text-sm text-muted hover:border-foreground/40 hover:text-foreground"
+                    // 키워드 줄에 딸린 부수 동작이라 헤더의 버튼들보다 가벼워야 한다.
+                    // 테두리를 빼고 아이콘만 남긴다 — 탭은 전부 글자라 아이콘 하나로 충분히 갈린다.
+                    // 크기는 44px 를 유지해 손가락으로 누르기 쉬운 상태로 둔다.
+                    className="grid size-11 shrink-0 place-items-center rounded-lg text-muted transition-colors hover:bg-surface hover:text-foreground"
                   >
                     <svg
                       viewBox="0 0 24 24"
-                      className="size-4"
+                      className="size-[18px]"
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="1.8"
@@ -164,7 +165,6 @@ export function NewsSearchPage() {
                     >
                       <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3Z" />
                     </svg>
-                    편집
                   </button>
                 </>
               )}
