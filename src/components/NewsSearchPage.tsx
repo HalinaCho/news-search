@@ -116,7 +116,7 @@ export function NewsSearchPage() {
                 href="/"
                 className="inline-flex min-h-11 items-center text-lg font-bold tracking-tight hover:opacity-70 md:order-1"
               >
-                TechPulse
+                뉴스편식
               </Link>
               <div className="md:order-3">
                 <AuthButton />

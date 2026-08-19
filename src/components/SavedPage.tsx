@@ -22,7 +22,7 @@ export function SavedPage() {
             href="/"
             className="inline-flex min-h-11 items-center text-lg font-bold tracking-tight hover:opacity-70"
           >
-            TechPulse
+            뉴스편식
           </Link>
           <div className="flex items-center gap-2">
             <Link

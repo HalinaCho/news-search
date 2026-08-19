@@ -5,8 +5,9 @@ import type { ReactNode } from "react";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "TechPulse — AI·로봇 기술 동향 뉴스",
-  description: "AI, 로봇 등 미래 기술 키워드로 최신 뉴스를 검색하고 정렬해 훑어봅니다.",
+  title: "뉴스편식 — 내가 고른 키워드만",
+  description:
+    "관심 있는 키워드만 골라 네이버 뉴스를 훑어봅니다. 읽은 기사는 흐려지고, 담아둔 기사는 저장함에 남습니다.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
