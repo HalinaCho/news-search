@@ -45,20 +45,17 @@ create index if not exists bookmarks_user_saved_at_idx
 --    행 단위로 쪼개면 순서 컬럼과 동기화 문제만 생기고 얻는 게 없다.
 --    개별 키워드로 조회할 일도 없다.
 --
---    dashboard_keywords: ["AI", "로봇", "반도체"]
---    categories:         [{ "name": "기술트렌드", "keywords": ["AI", "로봇"] }, ...]
+--    categories: [{ "name": "기술트렌드", "keywords": ["AI", "로봇"] }, ...]
 --    빈 배열은 "아직 안 건드림"이 아니라 "사용자가 다 지움"을 뜻한다.
 --    기본값 폴백 여부는 행의 존재 유무로 판단한다 — 그래서 default 를 두지 않는다.
 -- ─────────────────────────────────────────────────────────────
 create table if not exists public.keyword_settings (
   user_id            uuid        primary key references auth.users (id) on delete cascade,
-  dashboard_keywords jsonb       not null,
   categories         jsonb       not null,
   updated_at         timestamptz not null default now(),
 
   -- 형태만 최소한으로 강제한다. 내용 검증은 앱에서 한다.
-  constraint dashboard_keywords_is_array check (jsonb_typeof(dashboard_keywords) = 'array'),
-  constraint categories_is_array         check (jsonb_typeof(categories) = 'array')
+  constraint categories_is_array check (jsonb_typeof(categories) = 'array')
 );
 
 -- ─────────────────────────────────────────────────────────────
@@ -91,3 +88,15 @@ create policy "keyword_settings: 본인 행만" on public.keyword_settings
   to authenticated
   using ((select auth.uid()) = user_id)
   with check ((select auth.uid()) = user_id);
+
+-- ─────────────────────────────────────────────────────────────
+-- 기존 프로젝트 마이그레이션
+--
+-- 대시보드 페이지를 없애고 검색 화면을 루트로 옮기면서 dashboard_keywords 가 쓰이지 않게 됐다.
+-- 위의 create table 은 "if not exists" 라 이미 만들어진 테이블에서는 컬럼을 지워주지 않으므로,
+-- 예전에 스키마를 적용해 둔 프로젝트에서는 이 문장을 한 번 실행한다.
+--
+-- 이 컬럼은 not null 이고 기본값이 없다. 앱이 값을 안 보내기 시작하면 저장이 깨지므로
+-- 새 코드를 배포하기 "전에" 실행해야 한다.
+-- ─────────────────────────────────────────────────────────────
+alter table public.keyword_settings drop column if exists dashboard_keywords;

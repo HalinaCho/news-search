@@ -8,20 +8,13 @@ import { useUserData } from "./UserDataProvider";
 /** 손이 미끄러져 수백 개를 만드는 걸 막는 선. 실제로 쓰기에는 한참 넉넉하다. */
 const MAX_CATEGORIES = 12;
 const MAX_KEYWORDS = 24;
-const MAX_DASHBOARD = 8;
-
-interface Props {
-  /** 다이얼로그를 열면서 어느 섹션을 먼저 보여줄지. */
-  focus: "dashboard" | "categories";
-  onClose: () => void;
-}
 
 /** 앞뒤 공백과 맨 앞 #을 털어낸다 — 칩에 #이 붙어 보이니 그대로 따라 치는 사람이 많다. */
 function clean(value: string): string {
   return value.trim().replace(/^#+/, "").trim();
 }
 
-export function KeywordEditor({ focus, onClose }: Props) {
+export function KeywordEditor({ onClose }: { onClose: () => void }) {
   const { keywords, saveKeywords, resetKeywords } = useUserData();
 
   // 저장을 누르기 전까지는 초안만 고친다. 취소하면 통째로 버려진다.
@@ -36,37 +29,6 @@ export function KeywordEditor({ focus, onClose }: Props) {
     setDraft(next);
   };
 
-  // ── 대시보드 컬럼 ──
-  const addDashboard = (raw: string) => {
-    const keyword = clean(raw);
-    if (!keyword) return false;
-    if (draft.dashboardKeywords.includes(keyword)) {
-      setError(`"${keyword}"는 이미 있어요.`);
-      return false;
-    }
-    if (draft.dashboardKeywords.length >= MAX_DASHBOARD) {
-      setError(`대시보드 컬럼은 최대 ${MAX_DASHBOARD}개까지예요.`);
-      return false;
-    }
-    update({ ...draft, dashboardKeywords: [...draft.dashboardKeywords, keyword] });
-    return true;
-  };
-
-  const removeDashboard = (keyword: string) =>
-    update({
-      ...draft,
-      dashboardKeywords: draft.dashboardKeywords.filter((entry) => entry !== keyword),
-    });
-
-  const moveDashboard = (index: number, direction: -1 | 1) => {
-    const target = index + direction;
-    if (target < 0 || target >= draft.dashboardKeywords.length) return;
-    const next = [...draft.dashboardKeywords];
-    [next[index], next[target]] = [next[target], next[index]];
-    update({ ...draft, dashboardKeywords: next });
-  };
-
-  // ── 카테고리 ──
   const patchCategory = (index: number, patch: Partial<KeywordSettings["categories"][number]>) =>
     update({
       ...draft,
@@ -89,6 +51,15 @@ export function KeywordEditor({ focus, onClose }: Props) {
       categories: draft.categories.filter((_, position) => position !== index),
     });
 
+  /** 카테고리 순서가 곧 검색 화면의 탭 순서다. */
+  const moveCategory = (index: number, direction: -1 | 1) => {
+    const target = index + direction;
+    if (target < 0 || target >= draft.categories.length) return;
+    const next = [...draft.categories];
+    [next[index], next[target]] = [next[target], next[index]];
+    update({ ...draft, categories: next });
+  };
+
   const addKeyword = (index: number, raw: string) => {
     const keyword = clean(raw);
     if (!keyword) return false;
@@ -110,7 +81,6 @@ export function KeywordEditor({ focus, onClose }: Props) {
       keywords: draft.categories[index].keywords.filter((entry) => entry !== keyword),
     });
 
-  // ── 저장 ──
   const handleSave = async () => {
     const categories = draft.categories.map((category) => ({
       name: category.name.trim(),
@@ -130,7 +100,7 @@ export function KeywordEditor({ focus, onClose }: Props) {
     setSaving(true);
     setError(null);
     try {
-      await saveKeywords({ dashboardKeywords: draft.dashboardKeywords, categories });
+      await saveKeywords({ categories });
       onClose();
     } catch {
       setError("저장하지 못했어요. 잠시 후 다시 시도해 주세요.");
@@ -180,136 +150,91 @@ export function KeywordEditor({ focus, onClose }: Props) {
         </header>
 
         <div className="flex-1 overflow-y-auto px-5 py-4">
-          {/* focus 로 넘어온 섹션을 위에 놓는다. 둘 다 편집은 가능하다. */}
-          {(focus === "dashboard" ? ["dashboard", "categories"] : ["categories", "dashboard"]).map(
-            (section) =>
-              section === "dashboard" ? (
-                <section key="dashboard" className="mb-7">
-                  <h3 className="text-sm font-semibold">대시보드 컬럼</h3>
-                  <p className="mt-1 text-xs text-muted">
-                    홈에 나란히 뜨는 키워드예요. 위에 있는 것부터 왼쪽에 놓입니다.
-                  </p>
+          <p className="text-xs text-muted">
+            검색 화면의 탭과 그 아래 칩이에요. 위에 있는 카테고리가 왼쪽 탭이 됩니다.
+          </p>
 
-                  <ul className="mt-3 flex flex-col gap-1.5">
-                    {draft.dashboardKeywords.map((keyword, index) => (
-                      <li
-                        key={keyword}
-                        className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2"
-                      >
-                        <span className="flex-1 truncate text-sm">#{keyword}</span>
-                        <button
-                          type="button"
-                          onClick={() => moveDashboard(index, -1)}
-                          disabled={index === 0}
-                          aria-label={`${keyword} 위로`}
-                          className="grid size-8 place-items-center rounded-md text-muted hover:text-foreground disabled:opacity-30"
-                        >
-                          ↑
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => moveDashboard(index, 1)}
-                          disabled={index === draft.dashboardKeywords.length - 1}
-                          aria-label={`${keyword} 아래로`}
-                          className="grid size-8 place-items-center rounded-md text-muted hover:text-foreground disabled:opacity-30"
-                        >
-                          ↓
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => removeDashboard(keyword)}
-                          aria-label={`${keyword} 삭제`}
-                          className="grid size-8 place-items-center rounded-md text-muted hover:text-foreground"
-                        >
-                          ✕
-                        </button>
-                      </li>
-                    ))}
-                    {draft.dashboardKeywords.length === 0 && (
-                      <li className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-xs text-muted">
-                        컬럼이 하나도 없어요. 아래에서 추가해 주세요.
-                      </li>
-                    )}
-                  </ul>
-
-                  <AddInput
-                    placeholder="키워드 추가"
-                    onAdd={addDashboard}
-                    disabled={draft.dashboardKeywords.length >= MAX_DASHBOARD}
+          <div className="mt-3 flex flex-col gap-3">
+            {draft.categories.map((category, index) => (
+              <div key={index} className="rounded-xl border border-border bg-surface p-3">
+                <div className="flex items-center gap-2">
+                  <input
+                    value={category.name}
+                    onChange={(event) => patchCategory(index, { name: event.target.value })}
+                    placeholder="카테고리 이름"
+                    aria-label={`${index + 1}번째 카테고리 이름`}
+                    className="min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-foreground/40"
                   />
-                </section>
-              ) : (
-                <section key="categories">
-                  <h3 className="text-sm font-semibold">검색 카테고리</h3>
-                  <p className="mt-1 text-xs text-muted">
-                    검색 화면의 탭과 그 아래 칩이에요.
-                  </p>
-
-                  <div className="mt-3 flex flex-col gap-3">
-                    {draft.categories.map((category, index) => (
-                      <div
-                        key={index}
-                        className="rounded-xl border border-border bg-surface p-3"
-                      >
-                        <div className="flex items-center gap-2">
-                          <input
-                            value={category.name}
-                            onChange={(event) =>
-                              patchCategory(index, { name: event.target.value })
-                            }
-                            placeholder="카테고리 이름"
-                            aria-label={`${index + 1}번째 카테고리 이름`}
-                            className="min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-foreground/40"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeCategory(index)}
-                            aria-label={`${category.name || "이름 없는"} 카테고리 삭제`}
-                            className="grid size-9 shrink-0 place-items-center rounded-md text-muted hover:text-foreground"
-                          >
-                            ✕
-                          </button>
-                        </div>
-
-                        <ul className="mt-2 flex flex-wrap gap-1.5">
-                          {category.keywords.map((keyword) => (
-                            <li key={keyword}>
-                              <button
-                                type="button"
-                                onClick={() => removeKeyword(index, keyword)}
-                                aria-label={`${keyword} 삭제`}
-                                className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm text-muted hover:border-foreground/40 hover:text-foreground"
-                              >
-                                #{keyword}
-                                <span aria-hidden>✕</span>
-                              </button>
-                            </li>
-                          ))}
-                          {category.keywords.length === 0 && (
-                            <li className="py-1.5 text-xs text-muted">키워드가 없어요.</li>
-                          )}
-                        </ul>
-
-                        <AddInput
-                          placeholder="키워드 추가"
-                          onAdd={(value) => addKeyword(index, value)}
-                          disabled={category.keywords.length >= MAX_KEYWORDS}
-                        />
-                      </div>
-                    ))}
-                  </div>
-
                   <button
                     type="button"
-                    onClick={addCategory}
-                    disabled={draft.categories.length >= MAX_CATEGORIES}
-                    className="mt-3 inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted hover:border-foreground/40 hover:text-foreground disabled:opacity-40"
+                    onClick={() => moveCategory(index, -1)}
+                    disabled={index === 0}
+                    aria-label={`${category.name || "이름 없는"} 카테고리 왼쪽으로`}
+                    className="grid size-9 shrink-0 place-items-center rounded-md text-muted hover:text-foreground disabled:opacity-30"
                   >
-                    + 카테고리 추가
+                    ↑
                   </button>
-                </section>
-              ),
+                  <button
+                    type="button"
+                    onClick={() => moveCategory(index, 1)}
+                    disabled={index === draft.categories.length - 1}
+                    aria-label={`${category.name || "이름 없는"} 카테고리 오른쪽으로`}
+                    className="grid size-9 shrink-0 place-items-center rounded-md text-muted hover:text-foreground disabled:opacity-30"
+                  >
+                    ↓
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeCategory(index)}
+                    aria-label={`${category.name || "이름 없는"} 카테고리 삭제`}
+                    className="grid size-9 shrink-0 place-items-center rounded-md text-muted hover:text-foreground"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <ul className="mt-2 flex flex-wrap gap-1.5">
+                  {category.keywords.map((keyword) => (
+                    <li key={keyword}>
+                      <button
+                        type="button"
+                        onClick={() => removeKeyword(index, keyword)}
+                        aria-label={`${keyword} 삭제`}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm text-muted hover:border-foreground/40 hover:text-foreground"
+                      >
+                        #{keyword}
+                        <span aria-hidden>✕</span>
+                      </button>
+                    </li>
+                  ))}
+                  {category.keywords.length === 0 && (
+                    <li className="py-1.5 text-xs text-muted">키워드가 없어요.</li>
+                  )}
+                </ul>
+
+                <AddInput
+                  placeholder="키워드 추가"
+                  onAdd={(value) => addKeyword(index, value)}
+                  disabled={category.keywords.length >= MAX_KEYWORDS}
+                />
+              </div>
+            ))}
+          </div>
+
+          {draft.categories.length === 0 && (
+            <p className="mt-3 rounded-lg border border-dashed border-border px-3 py-6 text-center text-xs text-muted">
+              카테고리가 하나도 없어요. 아래에서 추가해 주세요.
+            </p>
           )}
+
+          <button
+            type="button"
+            onClick={addCategory}
+            disabled={draft.categories.length >= MAX_CATEGORIES}
+            className="mt-3 inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted hover:border-foreground/40 hover:text-foreground disabled:opacity-40"
+          >
+            + 카테고리 추가
+          </button>
         </div>
 
         <footer className="border-t border-border px-5 py-4">
@@ -352,7 +277,7 @@ export function KeywordEditor({ focus, onClose }: Props) {
   );
 }
 
-/** 입력하고 Enter 또는 + 를 누르면 추가된다. 성공했을 때만 입력칸을 비운다. */
+/** 입력하고 Enter 또는 추가를 누르면 반영된다. 성공했을 때만 입력칸을 비운다. */
 function AddInput({
   placeholder,
   onAdd,

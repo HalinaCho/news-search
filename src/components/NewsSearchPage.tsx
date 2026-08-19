@@ -10,6 +10,7 @@ import {
   findCategoryIndex,
   MAX_PAGE,
 } from "@/lib/constants";
+import { formatPubDate } from "@/lib/format";
 import type { SortOption } from "@/lib/types";
 import { AuthButton } from "./AuthButton";
 import { useAuth } from "./AuthProvider";
@@ -49,7 +50,11 @@ export function NewsSearchPage() {
   const rawPage = Number(searchParams.get("page") ?? "1");
   const page = Number.isInteger(rawPage) ? Math.min(Math.max(rawPage, 1), MAX_PAGE) : 1;
 
-  const { status, items, total, error, retry } = useNewsSearch({ query, sort, page });
+  const { status, items, total, error, lastBuildDate, retry } = useNewsSearch({
+    query,
+    sort,
+    page,
+  });
 
   // 어떤 탭을 펼쳐 둘지. 탭을 직접 누르면 그대로 따르고,
   // 검색어가 바뀌었을 때만 그 검색어가 속한 카테고리로 옮겨간다.
@@ -77,7 +82,7 @@ export function NewsSearchPage() {
         sort: next.sort ?? sort,
         page: String(next.page ?? 1), // 검색어·정렬이 바뀌면 1페이지부터 (FR-04-02)
       });
-      const href = `/search?${params.toString()}`;
+      const href = `/?${params.toString()}`;
       if (replace) router.replace(href, { scroll });
       else router.push(href, { scroll });
     },
@@ -155,13 +160,19 @@ export function NewsSearchPage() {
 
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">
         <div className="mb-5 flex items-center justify-between gap-3">
-          <p className="text-sm text-muted" aria-live="polite">
-            {isLoading
-              ? "불러오는 중…"
-              : status === "error" && items.length === 0
-                ? ""
-                : `검색결과 ${total.toLocaleString("ko-KR")}건`}
-          </p>
+          <div className="min-w-0">
+            <p className="text-sm text-muted" aria-live="polite">
+              {isLoading
+                ? "불러오는 중…"
+                : status === "error" && items.length === 0
+                  ? ""
+                  : `검색결과 ${total.toLocaleString("ko-KR")}건`}
+            </p>
+            {/* 같은 검색은 30분간 캐시되므로 지금 보는 게 언제 만들어진 결과인지 밝혀 둔다. */}
+            {!isLoading && lastBuildDate && (
+              <p className="mt-0.5 text-xs text-muted">{formatPubDate(lastBuildDate)} 갱신</p>
+            )}
+          </div>
           <SortSelect sort={sort} onChange={handleSort} />
         </div>
 
@@ -194,7 +205,7 @@ export function NewsSearchPage() {
         )}
       </main>
 
-      {editing && <KeywordEditor focus="categories" onClose={() => setEditing(false)} />}
+      {editing && <KeywordEditor onClose={() => setEditing(false)} />}
     </>
   );
 }

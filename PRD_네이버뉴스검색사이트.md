@@ -372,3 +372,4 @@ interface AppState {
 | v1.2 | 2026-08-18 | 키워드 칩을 카테고리(기술트렌드·주식·크립토) 구조로 변경 (FR-01) | Halina Cho |
 | v1.3 | 2026-08-19 | Supabase 연동. Google 로그인 도입과 함께 읽음 표시·저장함(북마크)·키워드 직접 편집 추가. 비목표 2개 항목 해제 (1.3 참고) | Halina Cho |
 | v1.3.1 | 2026-08-19 | 로그인 제공자를 카카오에서 Google로 변경 — Supabase의 카카오 제공자가 강제 요청하는 `account_email`·`profile_image` 동의항목이 카카오 비즈니스 앱 전환을 요구해 코드로 우회 불가 | Halina Cho |
+| v1.4 | 2026-08-19 | 대시보드 페이지 삭제, 검색 화면을 루트(/)로 이동. /search 는 리다이렉트로 유지. 대시보드 전용 키워드 설정(dashboard_keywords)도 함께 제거 | Halina Cho |

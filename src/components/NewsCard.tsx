@@ -8,12 +8,17 @@ import { useUserData } from "./UserDataProvider";
 
 export function NewsCard({ item }: { item: NewsItem }) {
   const { user, signIn } = useAuth();
-  const { readLinks, bookmarkedLinks, markRead, markUnread, toggleBookmark } = useUserData();
+  const { ready, readLinks, bookmarkedLinks, markRead, markUnread, toggleBookmark } =
+    useUserData();
 
   // 비로그인 상태에서는 저장할 곳이 없으니 읽음/저장 표시를 아예 켜지 않는다.
-  const read = user ? readLinks.has(item.link) : false;
-  const saved = user ? bookmarkedLinks.has(item.link) : false;
-  const trackRead = Boolean(user);
+  // 로그인했더라도 내 데이터가 도착하기 전까지는 마찬가지로 끈다 —
+  // 켜두면 모든 카드가 "안 읽음"으로 그려졌다가 뒤늦게 읽음으로 튀어서,
+  // 로그인 직후마다 목록이 한 번씩 출렁인다.
+  const personalized = Boolean(user) && ready;
+  const read = personalized && readLinks.has(item.link);
+  const saved = personalized && bookmarkedLinks.has(item.link);
+  const trackRead = personalized;
 
   return (
     <article
@@ -52,10 +57,13 @@ export function NewsCard({ item }: { item: NewsItem }) {
         <button
           type="button"
           onClick={() => (user ? toggleBookmark(item) : signIn())}
+          // 내 저장 목록이 도착하기 전에는 누른 게 반영되지 않는다 (반영할 기준 목록이 없다).
+          // 눌러도 아무 일이 없는 것처럼 보이니 그동안은 막아 둔다.
+          disabled={Boolean(user) && !ready}
           aria-pressed={saved}
           title={user ? (saved ? "저장 해제" : "저장") : "로그인하면 저장할 수 있어요"}
           aria-label={user ? (saved ? "저장 해제" : "저장") : "로그인하고 저장하기"}
-          className={`-mt-1 -mr-1 grid size-8 shrink-0 place-items-center rounded-lg transition-colors ${
+          className={`-mt-1 -mr-1 grid size-8 shrink-0 place-items-center rounded-lg transition-colors disabled:opacity-40 ${
             saved ? "text-accent" : "text-muted hover:text-foreground"
           }`}
         >

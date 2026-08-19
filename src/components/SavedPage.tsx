@@ -26,7 +26,7 @@ export function SavedPage() {
           </Link>
           <div className="flex items-center gap-2">
             <Link
-              href="/search"
+              href="/"
               className="inline-flex min-h-11 items-center rounded-lg border border-border bg-surface px-4 text-sm hover:border-foreground/40"
             >
               키워드 검색
@@ -70,7 +70,7 @@ export function SavedPage() {
               기사 카드 오른쪽 위의 북마크 아이콘을 누르면 여기에 담깁니다.
             </p>
             <Link
-              href="/search"
+              href="/"
               className="mt-4 inline-flex min-h-11 items-center rounded-lg border border-border px-4 text-sm hover:border-foreground/40"
             >
               기사 찾아보기

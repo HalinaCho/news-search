@@ -129,16 +129,13 @@ export async function fetchKeywordSettings(
 ): Promise<KeywordSettings | null> {
   const { data, error } = await supabase
     .from("keyword_settings")
-    .select("dashboard_keywords, categories")
+    .select("categories")
     .maybeSingle();
 
   if (error) throw error;
   if (!data) return null;
 
-  return {
-    dashboardKeywords: data.dashboard_keywords as string[],
-    categories: data.categories as KeywordSettings["categories"],
-  };
+  return { categories: data.categories as KeywordSettings["categories"] };
 }
 
 export async function saveKeywordSettings(
@@ -149,7 +146,6 @@ export async function saveKeywordSettings(
   const { error } = await supabase.from("keyword_settings").upsert(
     {
       user_id: userId,
-      dashboard_keywords: settings.dashboardKeywords,
       categories: settings.categories,
       updated_at: new Date().toISOString(),
     },
