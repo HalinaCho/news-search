@@ -1,3 +1,5 @@
+import type { KeywordSettings } from "./types";
+
 /** 한 페이지에 보여줄 기사 수. */
 export const DISPLAY = 20;
 
@@ -53,7 +55,22 @@ export const KEYWORD_CATEGORIES: readonly KeywordCategory[] = [
   },
 ];
 
+/**
+ * 사용자가 아직 아무것도 안 고쳤을 때 쓰는 기본 구성.
+ * 편집 UI 가 이 값을 복사해 초안으로 삼고, "기본값으로 되돌리기"도 여기로 돌아온다.
+ */
+export const DEFAULT_KEYWORD_SETTINGS: KeywordSettings = {
+  dashboardKeywords: [...DASHBOARD_KEYWORDS],
+  categories: KEYWORD_CATEGORIES.map((category) => ({
+    name: category.name,
+    keywords: [...category.keywords],
+  })),
+};
+
 /** 검색어가 어느 카테고리에도 없으면 -1. */
-export function findCategoryIndex(query: string): number {
-  return KEYWORD_CATEGORIES.findIndex((category) => category.keywords.includes(query));
+export function findCategoryIndex(
+  categories: readonly KeywordCategory[],
+  query: string,
+): number {
+  return categories.findIndex((category) => category.keywords.includes(query));
 }

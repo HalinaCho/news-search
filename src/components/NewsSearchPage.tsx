@@ -5,12 +5,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useState } from "react";
 import { useNewsSearch } from "@/hooks/useNewsSearch";
 import {
+  DEFAULT_KEYWORD_SETTINGS,
   DEFAULT_QUERY,
   findCategoryIndex,
-  KEYWORD_CATEGORIES,
   MAX_PAGE,
 } from "@/lib/constants";
 import type { SortOption } from "@/lib/types";
+import { AuthButton } from "./AuthButton";
+import { useAuth } from "./AuthProvider";
 import { CategoryTabs } from "./CategoryTabs";
 import { EmptyState } from "./EmptyState";
 import { ErrorState } from "./ErrorState";
@@ -19,7 +21,9 @@ import { NewsCard } from "./NewsCard";
 import { Pagination } from "./Pagination";
 import { SearchBar } from "./SearchBar";
 import { SkeletonCard } from "./SkeletonCard";
+import { KeywordEditor } from "./KeywordEditor";
 import { SortSelect } from "./SortSelect";
+import { useUserData } from "./UserDataProvider";
 
 const SKELETON_COUNT = 6; // FR-03-08
 const KEYWORD_PANEL_ID = "keyword-panel";
@@ -32,6 +36,12 @@ interface NavigateOptions {
 export function NewsSearchPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user } = useAuth();
+  const { keywords } = useUserData();
+  const [editing, setEditing] = useState(false);
+
+  // 아직 아무것도 안 고쳤거나 비로그인이면 앱 기본 카테고리를 쓴다.
+  const categories = (keywords ?? DEFAULT_KEYWORD_SETTINGS).categories;
 
   // URL 쿼리스트링이 검색 상태의 유일한 출처다 — 새로고침해도 그대로 복원된다 (FR-04-04).
   const query = searchParams.get("query")?.trim() || DEFAULT_QUERY;
@@ -44,7 +54,7 @@ export function NewsSearchPage() {
   // 어떤 탭을 펼쳐 둘지. 탭을 직접 누르면 그대로 따르고,
   // 검색어가 바뀌었을 때만 그 검색어가 속한 카테고리로 옮겨간다.
   // (검색어 우선으로 두면 현재 검색어가 든 탭에서 빠져나올 수 없다)
-  const queryCategory = findCategoryIndex(query);
+  const queryCategory = findCategoryIndex(categories, query);
   const [activeCategory, setActiveCategory] = useState(Math.max(queryCategory, 0));
   const [lastQuery, setLastQuery] = useState(query);
   if (query !== lastQuery) {
@@ -52,7 +62,10 @@ export function NewsSearchPage() {
     if (queryCategory >= 0) setActiveCategory(queryCategory);
   }
 
-  const categoryKeywords = KEYWORD_CATEGORIES[activeCategory].keywords;
+  // 카테고리를 지우거나 줄이면 골라둔 인덱스가 범위를 벗어날 수 있다.
+  // 카테고리를 전부 지웠다면 -1 이 되고, 탭도 칩도 그냥 비어 보인다.
+  const safeCategory = Math.min(activeCategory, categories.length - 1);
+  const categoryKeywords = categories[safeCategory]?.keywords ?? [];
 
   const navigate = useCallback(
     (
@@ -93,24 +106,42 @@ export function NewsSearchPage() {
       <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur">
         <div className="mx-auto w-full max-w-5xl px-4 py-3">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-6">
-            <Link
-              href="/"
-              className="inline-flex min-h-11 items-center self-start text-lg font-bold tracking-tight hover:opacity-70"
-            >
-              TechPulse
-            </Link>
-            <div className="md:flex-1">
+            <div className="flex items-center justify-between gap-3 md:contents">
+              <Link
+                href="/"
+                className="inline-flex min-h-11 items-center text-lg font-bold tracking-tight hover:opacity-70 md:order-1"
+              >
+                TechPulse
+              </Link>
+              <div className="md:order-3">
+                <AuthButton />
+              </div>
+            </div>
+            <div className="md:order-2 md:flex-1">
               <SearchBar query={query} onSearch={handleSearch} />
             </div>
           </div>
 
           <div className="mt-2">
-            <CategoryTabs
-              categories={KEYWORD_CATEGORIES}
-              activeIndex={activeCategory}
-              panelId={KEYWORD_PANEL_ID}
-              onSelect={setActiveCategory}
-            />
+            <div className="flex items-center gap-2">
+              <div className="min-w-0 flex-1">
+                <CategoryTabs
+                  categories={categories}
+                  activeIndex={safeCategory}
+                  panelId={KEYWORD_PANEL_ID}
+                  onSelect={setActiveCategory}
+                />
+              </div>
+              {user && (
+                <button
+                  type="button"
+                  onClick={() => setEditing(true)}
+                  className="min-h-11 shrink-0 px-2 text-sm text-muted hover:text-foreground"
+                >
+                  편집
+                </button>
+              )}
+            </div>
             <div id={KEYWORD_PANEL_ID} role="tabpanel" className="mt-2">
               <KeywordChips
                 keywords={categoryKeywords}
@@ -162,6 +193,8 @@ export function NewsSearchPage() {
           </>
         )}
       </main>
+
+      {editing && <KeywordEditor focus="categories" onClose={() => setEditing(false)} />}
     </>
   );
 }

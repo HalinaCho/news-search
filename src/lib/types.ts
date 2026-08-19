@@ -37,3 +37,9 @@ export type ErrorCode =
 export type SortOption = "sim" | "date";
 
 export type SearchStatus = "loading" | "success" | "empty" | "error";
+
+/** 사용자가 직접 고친 키워드 구성. 저장한 적 없으면 앱 기본값을 쓴다. */
+export interface KeywordSettings {
+  dashboardKeywords: string[];
+  categories: { name: string; keywords: string[] }[];
+}

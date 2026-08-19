@@ -8,6 +8,8 @@
   --muted: #6b7280;
   --skeleton-base: #e9ebf0;
   --skeleton-highlight: #f4f5f8;
+  /* 안 읽음 표시·저장됨 표시에 쓰는 강조색 */
+  --accent: #2563eb;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -19,6 +21,7 @@
     --muted: #9aa1ad;
     --skeleton-base: #1d222a;
     --skeleton-highlight: #272d37;
+    --accent: #6ea8fe;
   }
 }
 
@@ -28,6 +31,7 @@
   --color-surface: var(--surface);
   --color-border: var(--border);
   --color-muted: var(--muted);
+  --color-accent: var(--accent);
 }
 
 body {
