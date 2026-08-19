@@ -140,13 +140,33 @@ export function NewsSearchPage() {
                 />
               </div>
               {user && (
-                <button
-                  type="button"
-                  onClick={() => setEditing(true)}
-                  className="min-h-11 shrink-0 px-2 text-sm text-muted hover:text-foreground"
-                >
-                  키워드 편집
-                </button>
+                <>
+                  {/* 탭 묶음이 여기서 끝난다는 표시. 버튼이 탭 하나로 읽히지 않게 한다. */}
+                  <span className="h-5 w-px shrink-0 bg-border" aria-hidden />
+                  <button
+                    type="button"
+                    onClick={() => setEditing(true)}
+                    title="키워드 편집"
+                    aria-label="키워드 편집"
+                    // 탭은 테두리 없는 글자 + 밑줄로 상태를 나타낸다.
+                    // 편집은 탭이 아니라 동작이므로, 앱의 다른 버튼들과 같은 외곽선 상자 모양을 준다.
+                    className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-lg border border-border bg-surface px-2.5 text-sm text-muted hover:border-foreground/40 hover:text-foreground"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="size-4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden
+                    >
+                      <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3Z" />
+                    </svg>
+                    편집
+                  </button>
+                </>
               )}
             </div>
             <div id={KEYWORD_PANEL_ID} role="tabpanel" className="mt-2">
