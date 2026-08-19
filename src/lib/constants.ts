@@ -9,7 +9,10 @@ export const MAX_START = 1000;
 /** start 상한 때문에 실제로 접근 가능한 마지막 페이지. */
 export const MAX_PAGE = Math.floor((MAX_START - 1) / DISPLAY) + 1; // 50
 
-/** 검색어 없이 진입했을 때 먼저 보여줄 키워드 (4.1 — 빈 화면으로 시작하지 않는다). */
+/**
+ * 검색어 없이 진입했을 때 쓸 최후의 기본값 (4.1 — 빈 화면으로 시작하지 않는다).
+ * 평소에는 사용자의 첫 키워드를 따르고(firstKeyword), 키워드를 전부 지웠을 때만 여기로 온다.
+ */
 export const DEFAULT_QUERY = "AI";
 
 /** 검색 결과 캐시 유효기간. 서버(fetch revalidate)와 클라이언트 캐시가 같은 값을 쓴다. */
@@ -59,6 +62,18 @@ export const DEFAULT_KEYWORD_SETTINGS: KeywordSettings = {
     keywords: [...category.keywords],
   })),
 };
+
+/**
+ * 랜딩에서 처음 보여줄 검색어. 첫 카테고리의 첫 키워드를 쓴다.
+ * 첫 카테고리가 비어 있으면 다음 카테고리로 넘어가고, 어디에도 키워드가 없으면 기본값으로 돌아간다.
+ */
+export function firstKeyword(categories: readonly KeywordCategory[]): string {
+  for (const category of categories) {
+    const keyword = category.keywords[0];
+    if (keyword) return keyword;
+  }
+  return DEFAULT_QUERY;
+}
 
 /** 검색어가 어느 카테고리에도 없으면 -1. */
 export function findCategoryIndex(

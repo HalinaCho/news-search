@@ -46,6 +46,15 @@ interface SearchParams {
   page: number;
 }
 
+interface Options {
+  /**
+   * false 면 조회를 미룬다. 어떤 검색어로 물어봐야 할지 아직 모를 때 쓴다 —
+   * 랜딩에서 사용자의 키워드가 도착하기 전에 기본값으로 한 번 조회하면,
+   * 도착한 뒤 다시 조회하게 되어 호출이 두 번 나가고 화면도 한 번 튄다.
+   */
+  enabled?: boolean;
+}
+
 interface State {
   status: SearchStatus;
   items: NewsItem[];
@@ -132,11 +141,17 @@ async function requestNews(
   return (await response.json()) as NewsSuccess;
 }
 
-export function useNewsSearch({ query, sort, page }: SearchParams) {
+export function useNewsSearch(
+  { query, sort, page }: SearchParams,
+  { enabled = true }: Options = {},
+) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [retryToken, setRetryToken] = useState(0);
 
   useEffect(() => {
+    // 아직 조회할 때가 아니면 초기 상태(로딩)로 둔다 — 화면에는 스켈레톤이 계속 보인다.
+    if (!enabled) return;
+
     const scope = `${query}|${sort}`;
     const key = `${scope}|${page}`;
 
@@ -189,7 +204,7 @@ export function useNewsSearch({ query, sort, page }: SearchParams) {
       controller.abort();
       clearTimeout(timer);
     };
-  }, [query, sort, page, retryToken]);
+  }, [query, sort, page, retryToken, enabled]);
 
   const retry = useCallback(() => setRetryToken((token) => token + 1), []);
 

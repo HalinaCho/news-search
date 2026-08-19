@@ -7,8 +7,8 @@ import { groupDuplicates } from "@/lib/dedupe";
 import { useNewsSearch } from "@/hooks/useNewsSearch";
 import {
   DEFAULT_KEYWORD_SETTINGS,
-  DEFAULT_QUERY,
   findCategoryIndex,
+  firstKeyword,
   MAX_PAGE,
 } from "@/lib/constants";
 import { formatPubDate } from "@/lib/format";
@@ -40,25 +40,31 @@ export function NewsSearchPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
-  const { keywords, readLinks } = useUserData();
+  const { keywords, readLinks, ready: keywordsReady } = useUserData();
   const [editing, setEditing] = useState(false);
 
   // 아직 아무것도 안 고쳤거나 비로그인이면 앱 기본 카테고리를 쓴다.
   const categories = (keywords ?? DEFAULT_KEYWORD_SETTINGS).categories;
 
   // URL 쿼리스트링이 검색 상태의 유일한 출처다 — 새로고침해도 그대로 복원된다 (FR-04-04).
-  const query = searchParams.get("query")?.trim() || DEFAULT_QUERY;
+  // 검색어 없이 들어온 첫 화면에서는 내 첫 카테고리의 첫 키워드를 보여준다.
+  const explicitQuery = searchParams.get("query")?.trim() ?? "";
+  const query = explicitQuery || firstKeyword(categories);
+
+  // 내 키워드가 도착하기 전에는 조회를 미룬다. 기본값으로 먼저 물어보면
+  // 도착한 뒤 다른 키워드로 다시 물어보게 되어 호출이 두 번 나가고 화면이 한 번 튄다.
+  // 검색어가 URL에 명시돼 있으면 기다릴 이유가 없다.
+  const waitingForKeywords = !explicitQuery && !keywordsReady;
   const sort: SortOption = searchParams.get("sort") === "date" ? "date" : "sim";
   const rawPage = Number(searchParams.get("page") ?? "1");
   const page = Number.isInteger(rawPage) ? Math.min(Math.max(rawPage, 1), MAX_PAGE) : 1;
   // 이것도 URL에 담는다 — 새로고침해도 유지되고, 링크를 남기면 상대도 같은 화면을 본다.
   const unreadOnly = searchParams.get("unread") === "1";
 
-  const { status, items, total, error, lastBuildDate, retry } = useNewsSearch({
-    query,
-    sort,
-    page,
-  });
+  const { status, items, total, error, lastBuildDate, retry } = useNewsSearch(
+    { query, sort, page },
+    { enabled: !waitingForKeywords },
+  );
 
   // 어떤 탭을 펼쳐 둘지. 탭을 직접 누르면 그대로 따르고,
   // 검색어가 바뀌었을 때만 그 검색어가 속한 카테고리로 옮겨간다.
