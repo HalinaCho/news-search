@@ -49,6 +49,12 @@ Google 로 로그인하면 개인화 기능이 붙는다. 로그인하지 않아
 - **Sign In / Providers > Google** 을 켜고 위의 Client ID / Client Secret 을 넣는다
 - **URL Configuration > Redirect URLs** 에 `http://localhost:3000/auth/callback` 과 배포 주소의 `/auth/callback` 을 등록한다
 
+> Supabase 는 이 목록을 **쿼리스트링까지 포함한 전체 URL로** 대조한다. 목록에 `.../auth/callback` 이
+> 있어도 `.../auth/callback?next=/` 는 일치로 보지 않고, 그러면 조용히 **Site URL 로 폴백해서**
+> 인가 코드가 엉뚱한 주소로 날아간다. 그래서 이 앱은 로그인 후 돌아갈 경로를 쿼리가 아니라
+> 쿠키(`tp-auth-next`)로 넘긴다 — 덕분에 허용 목록을 와일드카드 없이 좁게 유지할 수 있다.
+> 로그인이 성공했는데 엉뚱한 사이트로 튕긴다면 이 매칭부터 의심한다.
+
 > 처음에는 카카오 로그인으로 붙였다가 Google 로 바꿨다. Supabase 의 카카오 제공자는
 > `account_email`·`profile_image`·`profile_nickname` 을 **항상** 요청하고 클라이언트가 넘긴
 > `scopes` 는 교체가 아니라 뒤에 덧붙이기만 한다. 앞의 두 항목은 카카오 비즈니스 앱 전환과
