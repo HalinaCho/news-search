@@ -167,12 +167,24 @@ export function NewsSearchPage() {
           <div className="mt-2">
             <div className="flex items-center gap-2">
               <div className="min-w-0 flex-1">
-                <CategoryTabs
-                  categories={categories}
-                  activeIndex={safeCategory}
-                  panelId={KEYWORD_PANEL_ID}
-                  onSelect={setActiveCategory}
-                />
+                {keywordsReady ? (
+                  <CategoryTabs
+                    categories={categories}
+                    activeIndex={safeCategory}
+                    panelId={KEYWORD_PANEL_ID}
+                    onSelect={setActiveCategory}
+                  />
+                ) : (
+                  // 내 카테고리가 도착하기 전엔 기본 카테고리를 보여주지 않는다.
+                  // 보여줬다가 도착한 값으로 바뀌면 화면이 한 번 튄다.
+                  <div className="flex gap-1" aria-hidden>
+                    {["w-16", "w-12", "w-14"].map((width) => (
+                      <div key={width} className="flex min-h-11 shrink-0 items-center px-3">
+                        <div className={`shimmer h-4 ${width} rounded`} />
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               {user && (
                 <>
@@ -205,11 +217,19 @@ export function NewsSearchPage() {
               )}
             </div>
             <div id={KEYWORD_PANEL_ID} role="tabpanel" className="mt-2">
-              <KeywordChips
-                keywords={categoryKeywords}
-                activeQuery={query}
-                onSelect={handleKeyword}
-              />
+              {keywordsReady ? (
+                <KeywordChips
+                  keywords={categoryKeywords}
+                  activeQuery={query}
+                  onSelect={handleKeyword}
+                />
+              ) : (
+                <div className="flex gap-2" aria-hidden>
+                  {["w-14", "w-20", "w-16", "w-12"].map((width) => (
+                    <div key={width} className={`shimmer h-11 ${width} rounded-full`} />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
