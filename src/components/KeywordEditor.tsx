@@ -260,7 +260,7 @@ export function KeywordEditor({ onClose }: { onClose: () => void }) {
                           type="button"
                           onPointerDown={(event) => startDrag(index, keyword, event)}
                           aria-label={`${keyword}, 끌어서 순서 바꾸기`}
-                          className={`touch-none py-1.5 pl-3 pr-1 ${dragging ? "cursor-grabbing" : "cursor-grab"}`}
+                          className={`touch-none select-none py-1.5 pl-3 pr-1 ${dragging ? "cursor-grabbing" : "cursor-grab"}`}
                         >
                           #{keyword}
                         </button>
