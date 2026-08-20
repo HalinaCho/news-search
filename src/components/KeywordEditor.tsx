@@ -243,36 +243,38 @@ export function KeywordEditor({ onClose }: { onClose: () => void }) {
                 </div>
 
                 <ul className="mt-2 flex flex-wrap gap-1.5">
-                  {category.keywords.map((keyword) => (
-                    <li
-                      key={keyword}
-                      data-keyword={keyword}
-                      data-category-index={index}
-                      className={`inline-flex items-center rounded-full border border-border text-sm text-muted hover:border-foreground/40 hover:text-foreground ${
-                        drag?.categoryIndex === index && drag.keyword === keyword
-                          ? "opacity-40"
-                          : ""
-                      }`}
-                    >
-                      <button
-                        type="button"
-                        onPointerDown={(event) => startDrag(index, keyword, event)}
-                        aria-label={`${keyword} 순서 이동`}
-                        className="grid touch-none cursor-grab place-items-center self-stretch pl-2.5 pr-1 active:cursor-grabbing"
+                  {category.keywords.map((keyword) => {
+                    const dragging = drag?.categoryIndex === index && drag.keyword === keyword;
+                    return (
+                      <li
+                        key={keyword}
+                        data-keyword={keyword}
+                        data-category-index={index}
+                        className={`inline-flex items-center rounded-full border text-sm transition-[transform,box-shadow] ${
+                          dragging
+                            ? "relative z-10 scale-105 border-foreground/40 text-foreground shadow-md"
+                            : "border-border text-muted hover:border-foreground/40 hover:text-foreground"
+                        }`}
                       >
-                        <span aria-hidden>⠿</span>
-                      </button>
-                      <span className="py-1.5">#{keyword}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeKeyword(index, keyword)}
-                        aria-label={`${keyword} 삭제`}
-                        className="grid place-items-center self-stretch pl-1.5 pr-3"
-                      >
-                        <span aria-hidden>✕</span>
-                      </button>
-                    </li>
-                  ))}
+                        <button
+                          type="button"
+                          onPointerDown={(event) => startDrag(index, keyword, event)}
+                          aria-label={`${keyword}, 끌어서 순서 바꾸기`}
+                          className={`touch-none py-1.5 pl-3 pr-1 ${dragging ? "cursor-grabbing" : "cursor-grab"}`}
+                        >
+                          #{keyword}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeKeyword(index, keyword)}
+                          aria-label={`${keyword} 삭제`}
+                          className="grid place-items-center self-stretch pl-1 pr-3"
+                        >
+                          <span aria-hidden>✕</span>
+                        </button>
+                      </li>
+                    );
+                  })}
                   {category.keywords.length === 0 && (
                     <li className="py-1.5 text-xs text-muted">키워드가 없어요.</li>
                   )}
