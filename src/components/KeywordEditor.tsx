@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DEFAULT_KEYWORD_SETTINGS } from "@/lib/constants";
 import type { KeywordSettings } from "@/lib/types";
 import { useUserData } from "./UserDataProvider";
@@ -80,6 +80,55 @@ export function KeywordEditor({ onClose }: { onClose: () => void }) {
     patchCategory(index, {
       keywords: draft.categories[index].keywords.filter((entry) => entry !== keyword),
     });
+
+  // 드래그로 끌고 있는 칩. keyword는 카테고리 안에서 유일하므로 그대로 식별자로 쓴다.
+  const [drag, setDrag] = useState<{ categoryIndex: number; keyword: string } | null>(null);
+
+  const startDrag = (categoryIndex: number, keyword: string, event: React.PointerEvent) => {
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setDrag({ categoryIndex, keyword });
+  };
+
+  useEffect(() => {
+    if (!drag) return;
+
+    const handleMove = (event: PointerEvent) => {
+      const target = document.elementFromPoint(event.clientX, event.clientY);
+      const li = target instanceof Element ? target.closest<HTMLElement>("[data-keyword]") : null;
+      if (!li) return;
+      const categoryIndex = Number(li.dataset.categoryIndex);
+      const keyword = li.dataset.keyword;
+      if (categoryIndex !== drag.categoryIndex || !keyword || keyword === drag.keyword) return;
+
+      setDraft((current) => {
+        const category = current.categories[categoryIndex];
+        const keywords = [...category.keywords];
+        const fromIndex = keywords.indexOf(drag.keyword);
+        const toIndex = keywords.indexOf(keyword);
+        if (fromIndex === -1 || toIndex === -1) return current;
+        keywords.splice(fromIndex, 1);
+        keywords.splice(toIndex, 0, drag.keyword);
+        return {
+          ...current,
+          categories: current.categories.map((category, position) =>
+            position === categoryIndex ? { ...category, keywords } : category,
+          ),
+        };
+      });
+    };
+
+    const endDrag = () => setDrag(null);
+
+    window.addEventListener("pointermove", handleMove);
+    window.addEventListener("pointerup", endDrag);
+    window.addEventListener("pointercancel", endDrag);
+    return () => {
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", endDrag);
+      window.removeEventListener("pointercancel", endDrag);
+    };
+  }, [drag]);
 
   const handleSave = async () => {
     const categories = draft.categories.map((category) => ({
@@ -195,14 +244,31 @@ export function KeywordEditor({ onClose }: { onClose: () => void }) {
 
                 <ul className="mt-2 flex flex-wrap gap-1.5">
                   {category.keywords.map((keyword) => (
-                    <li key={keyword}>
+                    <li
+                      key={keyword}
+                      data-keyword={keyword}
+                      data-category-index={index}
+                      className={`inline-flex items-center rounded-full border border-border text-sm text-muted hover:border-foreground/40 hover:text-foreground ${
+                        drag?.categoryIndex === index && drag.keyword === keyword
+                          ? "opacity-40"
+                          : ""
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onPointerDown={(event) => startDrag(index, keyword, event)}
+                        aria-label={`${keyword} 순서 이동`}
+                        className="grid touch-none cursor-grab place-items-center self-stretch pl-2.5 pr-1 active:cursor-grabbing"
+                      >
+                        <span aria-hidden>⠿</span>
+                      </button>
+                      <span className="py-1.5">#{keyword}</span>
                       <button
                         type="button"
                         onClick={() => removeKeyword(index, keyword)}
                         aria-label={`${keyword} 삭제`}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm text-muted hover:border-foreground/40 hover:text-foreground"
+                        className="grid place-items-center self-stretch pl-1.5 pr-3"
                       >
-                        #{keyword}
                         <span aria-hidden>✕</span>
                       </button>
                     </li>
