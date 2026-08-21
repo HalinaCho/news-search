@@ -72,8 +72,12 @@ export function NewsSearchPage() {
   const queryCategory = findCategoryIndex(categories, query);
   const [activeCategory, setActiveCategory] = useState(Math.max(queryCategory, 0));
   const [lastQuery, setLastQuery] = useState(query);
-  if (query !== lastQuery) {
+  // keywordsReady 도 같이 지켜본다 — 재진입 직후엔 내 키워드가 도착하기 전이라
+  // 기본 카테고리로 한 번 계산해 버리는데, query 는 그대로라 위 조건만으론 못 잡는다.
+  const [lastKeywordsReady, setLastKeywordsReady] = useState(keywordsReady);
+  if (query !== lastQuery || keywordsReady !== lastKeywordsReady) {
     setLastQuery(query);
+    setLastKeywordsReady(keywordsReady);
     if (queryCategory >= 0) setActiveCategory(queryCategory);
   }
 
